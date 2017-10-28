@@ -28,7 +28,7 @@ namespace ConsoleApplication
             stopWatch.Start();
             ParallelPrimes.ThreadedSearch(n);
             stopWatch.Stop();
-            Console.WriteLine("Parallel prime search for {0} values took {1} ms.",
+            Console.WriteLine("Threaded prime search for {0} values took {1} ms.",
                 n, stopWatch.ElapsedMilliseconds);
             
             stopWatch.Restart();
@@ -49,99 +49,6 @@ namespace ConsoleApplication
             
             Console.WriteLine();
         }
-    }
-
-    public static class EuratosphenesSieve
-    {
-        public static IEnumerable<int> SieveOfErathostenes(int upperLimit)
-        {
-            //BitArray works just like a bool[] but takes up a lot less space.
-            BitArray composite = new BitArray(upperLimit);
-
-            
-            int sqrt= (int)Math.Sqrt(upperLimit);
-            for (int p = 2; p < sqrt; ++p) {
-                if (composite[p]) continue; 
-
-                yield return p; 
-
-               
-                for (int i = p * p; i < upperLimit; i += p)
-                    composite[i] = true;
-            }
-            for (int p = sqrt; p < upperLimit; ++p) {
-                if (!composite[p]) yield return p;
-            }
-        }
-
-       }
-    public class SegmentedSieve{
-        const int L1D_CACHE_SIZE = 32768;
-
-       static public IList<int> segmented_sieve(int limit)
-        {
-            var res = new List<int>();
-            int sqrt = (int) Math.Sqrt(limit);
-            int segment_size = Math.Max(sqrt, L1D_CACHE_SIZE);
-
-            int s = 3;
-            int n = 3;
-
-            
-            var is_prime = new BitArray(sqrt + 1);
-            is_prime.SetAll(true);
-            for (int i = 2; i * i <= sqrt; i++)
-            {
-                if (is_prime[i])
-                    for (int j = i * i; j <= sqrt; j += i)
-                    { 
-                        is_prime[j] = false;  
-                    }
-            }
-            
-            var sieve = new BitArray(segment_size);
-            var primes = new List<int>();
-            var next = new List<int>();
-
-            for (int low = 0; low <= limit; low += segment_size)
-            {
-                sieve.SetAll(true);
-
-                
-                int high = Math.Min(low + segment_size - 1, limit);
-
-                
-                for (; s * s <= high; s += 2)
-                {
-                    if (is_prime[s])
-                    {
-                        primes.Add(s);
-                        next.Add(s * s - low);
-                    }
-                }
-
-                
-                for (var i = 0; i < primes.Count; i++)
-                {
-                    int j = next[i];
-                    for (int k = primes[i] * 2; j < segment_size; j += k)
-                    {
-                        sieve[j] = false;
-                    }
-                    next[i] = j - segment_size;
-                }
-
-                for (; n <= high; n += 2)
-                {
-                    if (sieve[n - low]) // n is a prime
-                        res.Add(n);
-                }
-            }
-
-
-            return res;
-        }
-
     }
 
     public static class ParallelPrimes
