@@ -53,7 +53,7 @@ namespace ConsoleApplication
 
     public static class ParallelPrimes
     {
-        public static bool isPrime(int n)
+        private static bool isPrime(int n)
         {
             if (n % 2 == 0 && n != 2 || n == 1) return false;
             for (int i = 3; i <= Math.Round(Math.Sqrt(n)); i +=2)
@@ -63,7 +63,7 @@ namespace ConsoleApplication
             return true;
         }
 
-        public static List<int> checkRange(int start, int end)
+        private static List<int> checkRange(int start, int end)
         {
             //if we lock the list for concatination threads are queued and executed randomly most of the time so we get
             //not ordered list of primes
