@@ -1,20 +1,16 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Data;
-using System.Data.Odbc;
-using System.Data.SqlTypes;
-using System.Security.Cryptography;
 using System.Threading;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
+
 
 namespace ConsoleApplication
 {
     internal class PrimeNumbers
     {
-        public static void Main(string[] args)
+       public static void Main(string[] args)
         {
             int[] counts = new int[] {1000, 10000, 100000, 1000000, 10000000};
            foreach (var n in counts)

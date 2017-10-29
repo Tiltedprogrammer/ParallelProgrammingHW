@@ -29,7 +29,9 @@ namespace ConsoleApplication
             Task<string>[] _fileTasks= new Task<string>[files.Length];
             string[] directories = Directory.GetDirectories(path);
             Task<string>[] _hashFolderTasks = new Task<string>[directories.Length];
+            /* Hashing folder's path*/
             tmpHashedFolder.Append(HashString(path));
+            /* Hashing all files in the folder*/
             if (files.Length != 0)
             {
                 for(int i = 0; i < files.Length; i++)
@@ -40,6 +42,7 @@ namespace ConsoleApplication
                     
                 }
             }
+            /* Hashing all nested folders in the folder*/
             if (directories.Length != 0)
             {
 
