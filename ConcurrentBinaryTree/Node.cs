@@ -7,7 +7,7 @@ namespace ConcurrentBinaryTree
         {
             public readonly K key;
 
-            public volatile object value;
+            public volatile object  value;
 
             //deletion flag if false then node is removed
             public volatile bool mark;

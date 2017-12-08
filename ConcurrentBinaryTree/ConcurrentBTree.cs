@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO.MemoryMappedFiles;
 using System.Threading;
 
 namespace ConcurrentBinaryTree
@@ -90,7 +91,7 @@ namespace ConcurrentBinaryTree
                         if (res2 <= 0) {
                             if (res2 == 0) {
                                 pred.unlockSuccLock();
-                                Console.WriteLine("Key already exists");
+                                //Console.WriteLine("Key already exists");
                                 return default(V);
                             }
                             Node<K,V> parent = chooseParent(pred, succ, node);
@@ -143,19 +144,13 @@ namespace ConcurrentBinaryTree
         }
         
         private Node<K,V> lockParent(Node<K,V> node) {
-            Node<K, V> parent = node.parent;
-            parent.lockTreeLock();
-            
-            while (node.parent != parent || !parent.mark) {
-                parent.unlockTreeLock();
-                parent = node.parent;
-                while (!parent.mark) {
-                    parent = node.parent;
-                    Thread.Yield();
-                }
+            while (true)
+            {
+                var parent = node.parent;
                 parent.lockTreeLock();
+                if (node.parent == parent && parent.mark) return parent;
+                parent.unlockTreeLock();
             }
-            return parent;
         }
 
         public V remove(K key)
@@ -200,6 +195,7 @@ namespace ConcurrentBinaryTree
                     
                     s.lockSuccLock();
                     bool hasTwoChildren = acquireTreeLocks(s);
+                    var sParent = lockParent(s);
                     
                     //Update logical order
 
@@ -211,8 +207,9 @@ namespace ConcurrentBinaryTree
                     p.unlockSuccLock();
                     
                     //Physical remove
-                    
-                    removeFromTree(s,hasTwoChildren);
+                    //lockParent(s);
+                    removeFromTree(s,sParent,hasTwoChildren);
+                    //s.parent.unlockTreeLock();
                     return (V)s.value;
                 }
                 
@@ -228,7 +225,7 @@ namespace ConcurrentBinaryTree
             while (true)
             {
                 node.lockTreeLock();
-                lockParent(node);
+                //var p = lockParent(node);
                 
                 Node<K, V> right = node.right;
                 Node<K, V> left = node.left;
@@ -239,7 +236,7 @@ namespace ConcurrentBinaryTree
                     {
                         if(!right.tryLockTreeLock())
                         {
-                            node.parent.unlockTreeLock();
+                           // p.unlockTreeLock();
                             node.unlockTreeLock();
                             Thread.Yield();
                             continue;
@@ -251,7 +248,7 @@ namespace ConcurrentBinaryTree
                         if (!left.tryLockTreeLock())
                         {
                            // Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
-                            node.parent.unlockTreeLock();
+                            //p.unlockTreeLock();
                             node.unlockTreeLock();
                             Thread.Yield();
                             continue;
@@ -269,7 +266,7 @@ namespace ConcurrentBinaryTree
                     if (!parent.tryLockTreeLock())
                     {
                         //Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
-                        node.parent.unlockTreeLock();
+                       // p.unlockTreeLock();
                         node.unlockTreeLock();
                         Thread.Yield();
                         continue;
@@ -278,7 +275,7 @@ namespace ConcurrentBinaryTree
                     {
                        // Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
                         parent.unlockTreeLock();
-                        node.parent.unlockTreeLock();
+                        //p.unlockTreeLock();
                         node.unlockTreeLock();
                         Thread.Yield();
                         continue;
@@ -289,9 +286,8 @@ namespace ConcurrentBinaryTree
                 if (!s.tryLockTreeLock())
                 {
                     //Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
-                    if(s.parent != node)s.parent.unlockTreeLock();
-                    node.parent.unlockTreeLock();
                     node.unlockTreeLock();
+                    if(s.parent != node)s.parent.unlockTreeLock();                                       
                     Thread.Yield();
                     continue;
                 }
@@ -302,10 +298,10 @@ namespace ConcurrentBinaryTree
                     if (!s.right.tryLockTreeLock())
                     {
                         //Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
-                        s.unlockTreeLock();
-                        if(s.parent != node)s.parent.unlockTreeLock();
-                        node.parent.unlockTreeLock();
                         node.unlockTreeLock();
+                        s.unlockTreeLock();
+                        if(s.parent != node) s.parent.unlockTreeLock();
+                      //  p.unlockTreeLock();
                         Thread.Yield();
                         continue;
                     }
@@ -317,26 +313,27 @@ namespace ConcurrentBinaryTree
             }
         }
 
-        private void removeFromTree(Node<K, V> node,bool hasTwoChildren)
+        private void removeFromTree(Node<K, V> node, Node<K, V> parent, bool hasTwoChildren)
         {
-            Node<K, V> child,parent = node.parent;
+            Node<K, V> child;
             if (!hasTwoChildren)
             {
 
                 child = node.right == null ? node.left : node.right;
-                Node<K, V> parent1 = node.parent;
+                //parent = node.parent;
                 updateChild(parent, node, child);
                 if(child != null)child.unlockTreeLock();
-                parent1.unlockTreeLock();
+                parent.unlockTreeLock();
                 node.unlockTreeLock();
                 return;
 
             }
             else
             {
+                //Node<K,V> parent = node.parent;
                 Node<K, V> succ = node.succ;
                 child = succ.right;
-                Node<K, V> oldParent = succ.parent;
+                Node<K,V> oldParent = succ.parent;
                 updateChild(oldParent, succ, child);
                 succ.left = node.left;
                 succ.right = node.right;
@@ -346,28 +343,32 @@ namespace ConcurrentBinaryTree
                 {
                     node.right.parent = succ;
                 }
-                updateChild(node.parent, node, succ);
+                updateChild(parent, node, succ);
                 if (child != null)
                 {
                     child.unlockTreeLock();
                 }
-                succ.unlockTreeLock();
+                //succ.unlockTreeLock();
                 if (oldParent == node)
                 {
                     oldParent = succ;
                 }
                 else
                 {
-                    succ.parent.unlockTreeLock();
-                    
+                    succ.unlockTreeLock();
                 }
+                oldParent.unlockTreeLock();
+                parent.unlockTreeLock();
+                node.unlockTreeLock();
+                    
                 
             }
-            parent.unlockTreeLock();
-            node.unlockTreeLock();
+           // node.parent.unlockTreeLock();
             
-             
+
+
         }
+       
         
         private void updateChild(Node<K, V> parent, Node<K, V> oldChild,
             Node<K, V> newChild) {
