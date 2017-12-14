@@ -1,4 +1,11 @@
 # ParallelProgrammingHW
+# Concurrent BST
+
+![img_alt](https://github.com/Tiltedprogrammer/ParallelProgrammingHW/blob/master/ConcurrentBinaryTree/benchmark1.png)
+
+![img_alt](https://github.com/Tiltedprogrammer/ParallelProgrammingHW/blob/master/ConcurrentBinaryTree/benchmark2.png)
+
+# Prime numbers 
 
 1. **1000** numbers
 - Threaded prime search values took  **7 ms**.
@@ -25,3 +32,5 @@
  - Sequental prime search took **15696 ms**.
   - Threadpool prime search took **8050 ms**.
    - Task prime search took **10209 ms**.
+   
+
